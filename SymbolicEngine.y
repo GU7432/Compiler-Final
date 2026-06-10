@@ -88,18 +88,64 @@ Node* derive(Node *node){
     
 }
 
-void to_poly_plain(Node* node,int handle){
-    if(node == NULL) return;
-    if(node->type == node_mul){
-        add_poly_term(polynomials[handle],node->left->val,node->right->val);
-        return;
+
+static poly_t poly_pow(poly_t P, int n) {
+    poly_t result = make_poly(P->id);
+    add_poly_term(result, 1.0, 0.0);
+    for (int i = 0; i < n; ++i) {
+        poly_t tmp = mul(result, P);
+        result = tmp;
     }
-    if(node->type == node_exp){
-        add_poly_term(polynomials[handle],1.0,node->right->val);
-        return;
+    return result;
+}
+
+poly_t ast_to_poly(Node* node) {
+    if (node == NULL) return NULL;
+
+    if (node->type == node_num) {
+        poly_t P = make_poly(0);
+        add_poly_term(P, node->val, 0.0);
+        node->poly = P;
+        return P;
     }
-    to_poly_plain(node->left,handle);
-    to_poly_plain(node->right,handle);
+
+    if (node->type == node_term) {
+        poly_t P = make_poly(0);
+        add_poly_term(P, 1.0, 1.0);
+        node->poly = P;
+        return P;
+    }
+
+    if (node->type == node_exp) {
+        poly_t base = ast_to_poly(node->left);
+        int n = (int)node->right->val;
+        poly_t P = poly_pow(base, n);
+        sort_poly(P);
+        node->poly = P;
+        return P;
+    }
+
+    poly_t L = ast_to_poly(node->left);
+    poly_t R = ast_to_poly(node->right);
+
+    poly_t P = NULL;
+    switch (node->type) {
+        case node_add: P = add(L, R); break;
+        case node_sub: P = sub(L, R); break;
+        case node_mul: P = mul(L, R); break;
+        case node_div:
+            if (R->root && R->root->next == NULL && sgn(R->root->expo) == 0) {
+                P = mul_scalar(1.0 / R->root->coeff, L);
+            } else {
+                fprintf(stderr, "Warning: non-constant divisor — treating as 1\n");
+                P = L;
+            }
+            break;
+        default: P = make_poly(0); break;
+    }
+    sort_poly(P);
+    node->poly = P;
+    return P;
 }
 
 void print_tree_plain(Node* node,int dep){
@@ -121,15 +167,11 @@ void print_tree_plain(Node* node,int dep){
 int main(int argc,char **argv){
     yyparse();
 
-    // print_tree_plain(ast_root, 0);
-    poly_h handle = add_poly(0,0);
-    to_poly_plain(ast_root,handle);
-    printf("\n");
-    print_poly(polynomials[handle]);
-    sort_poly(polynomials[handle]);
-    print_poly(polynomials[handle]);
-    
-    printf("\n");
+    poly_t result = ast_to_poly(ast_root);
+    if (result) {
+        print_poly(result);
+    }
+
     return 0;
 }
 

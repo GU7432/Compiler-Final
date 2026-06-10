@@ -1,5 +1,5 @@
 #include <stdlib.h>
-typedef enum { 
+typedef enum {
     node_num,
     node_add,
     node_sub,
@@ -10,12 +10,16 @@ typedef enum {
     node_exp
 } NodeType;
 
+/* forward-declare poly so Node can hold a pointer to it */
+struct poly;
+
 typedef struct Node {
     NodeType type;
     double val;
     char* id;
     struct Node *left;
     struct Node *right;
+    struct poly *poly; /* polynomial computed bottom-up for this node */
 } Node;
 Node* make_num(double val){
     Node* node = (Node*)malloc(sizeof(Node));
