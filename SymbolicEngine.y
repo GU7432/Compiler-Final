@@ -89,17 +89,6 @@ Node* derive(Node *node){
     
 }
 
-
-static poly_t poly_pow(poly_t P, int n) {
-    poly_t result = make_poly(P->id);
-    add_poly_term(result, 1.0, 0.0);
-    for (int i = 0; i < n; ++i) {
-        poly_t tmp = mul(result, P);
-        result = tmp;
-    }
-    return result;
-}
-
 poly_t ast_to_poly(Node* node) {
     if (node == NULL) return NULL;
 
