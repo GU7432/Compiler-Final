@@ -90,7 +90,28 @@ typedef struct Node {
     struct Node *left;
     struct Node *right;
 } Node;
-
+Node* make_num(double val){
+    Node* node = (Node*)malloc(sizeof(Node));
+    node->type = node_num;
+    node->val = val;
+    node->left = NULL;
+    node->right = NULL;
+    return node;
+}
+Node* make_variable(char* id){
+    Node* node = (Node*)malloc(sizeof(Node));
+    node->type = node_term;
+    node->val = 0.0;
+    node->id = id;
+    return node;
+}
+Node* make_op(NodeType type, Node* left, Node* right){
+    Node* node = (Node*)malloc(sizeof(Node));
+    node->type = type;
+    node->left = left;
+    node->right = right;
+    return node;
+}
 Node* make_node(NodeType type, Node* left, Node* right,double val,char* id){
     Node* node = (Node*)malloc(sizeof(Node));
     node->type = type;
@@ -106,7 +127,7 @@ void yyerror(const char *s);
 
 Node* ast_root = NULL;
 
-#line 110 "SymbolicEngine.tab.c"
+#line 131 "SymbolicEngine.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -481,16 +502,16 @@ union yyalloc
 /* YYFINAL -- State number of the termination state.  */
 #define YYFINAL  2
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   28
+#define YYLAST   26
 
 /* YYNTOKENS -- Number of terminals.  */
 #define YYNTOKENS  15
 /* YYNNTS -- Number of nonterminals.  */
 #define YYNNTS  5
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  12
+#define YYNRULES  13
 /* YYNSTATES -- Number of states.  */
-#define YYNSTATES  20
+#define YYNSTATES  22
 
 /* YYMAXUTOK -- Last valid token kind.  */
 #define YYMAXUTOK   269
@@ -540,8 +561,8 @@ static const yytype_int8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int8 yyrline[] =
 {
-       0,    56,    56,    57,    64,    65,    66,    70,    71,    72,
-      76,    77,    78
+       0,    77,    77,    78,    85,    86,    87,    91,    92,    93,
+      97,    98,    99,   100
 };
 #endif
 
@@ -569,7 +590,7 @@ yysymbol_name (yysymbol_kind_t yysymbol)
 }
 #endif
 
-#define YYPACT_NINF (-3)
+#define YYPACT_NINF (-8)
 
 #define yypact_value_is_default(Yyn) \
   ((Yyn) == YYPACT_NINF)
@@ -583,8 +604,9 @@ yysymbol_name (yysymbol_kind_t yysymbol)
    STATE-NUM.  */
 static const yytype_int8 yypact[] =
 {
-      -3,     0,    -3,    -3,    -2,    -3,     1,    13,    -3,    12,
-      -2,    -2,    -3,    -2,    -2,    -3,    13,    13,    -3,    -3
+      -8,     0,    -8,    -8,    -2,    -7,     1,    13,    -8,    12,
+       4,    -2,    -2,    -8,    -2,    -2,    -8,    -8,    13,    13,
+      -8,    -8
 };
 
 /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
@@ -593,13 +615,14 @@ static const yytype_int8 yypact[] =
 static const yytype_int8 yydefact[] =
 {
        2,     0,     1,    10,     0,    12,     0,     4,     7,     0,
-       0,     0,     3,     0,     0,    11,     5,     6,     8,     9
+       0,     0,     0,     3,     0,     0,    11,    13,     5,     6,
+       8,     9
 };
 
 /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int8 yypgoto[] =
 {
-      -3,    -3,     3,    11,    14
+      -8,    -8,     5,    10,    11
 };
 
 /* YYDEFGOTO[NTERM-NUM].  */
@@ -613,16 +636,16 @@ static const yytype_int8 yydefgoto[] =
    number is the opposite.  If YYTABLE_NINF, syntax error.  */
 static const yytype_int8 yytable[] =
 {
-       2,     3,     0,     3,     0,    10,    11,     9,     4,     0,
-       4,     5,     0,     5,     0,    12,    10,    11,     0,    13,
-      14,    16,    17,    15,     0,     0,     0,    18,    19
+       2,     3,    10,     3,     0,    11,    12,    17,     4,     9,
+       4,     5,     0,     5,     0,    13,    11,    12,     0,    14,
+      15,    18,    19,    16,     0,    20,    21
 };
 
 static const yytype_int8 yycheck[] =
 {
-       0,     3,    -1,     3,    -1,     4,     5,     4,    10,    -1,
+       0,     3,     9,     3,    -1,     4,     5,     3,    10,     4,
       10,    13,    -1,    13,    -1,    14,     4,     5,    -1,     6,
-       7,    10,    11,    11,    -1,    -1,    -1,    13,    14
+       7,    11,    12,    11,    -1,    14,    15
 };
 
 /* YYSTOS[STATE-NUM] -- The symbol kind of the accessing symbol of
@@ -630,21 +653,22 @@ static const yytype_int8 yycheck[] =
 static const yytype_int8 yystos[] =
 {
        0,    16,     0,     3,    10,    13,    17,    18,    19,    17,
-       4,     5,    14,     6,     7,    11,    18,    18,    19,    19
+       9,     4,     5,    14,     6,     7,    11,     3,    18,    18,
+      19,    19
 };
 
 /* YYR1[RULE-NUM] -- Symbol kind of the left-hand side of rule RULE-NUM.  */
 static const yytype_int8 yyr1[] =
 {
        0,    15,    16,    16,    17,    17,    17,    18,    18,    18,
-      19,    19,    19
+      19,    19,    19,    19
 };
 
 /* YYR2[RULE-NUM] -- Number of symbols on the right-hand side of rule RULE-NUM.  */
 static const yytype_int8 yyr2[] =
 {
        0,     2,     0,     3,     1,     3,     3,     1,     3,     3,
-       1,     3,     1
+       1,     3,     1,     3
 };
 
 
@@ -1108,70 +1132,76 @@ yyreduce:
   switch (yyn)
     {
   case 3: /* tree_root: tree_root exp EOL  */
-#line 57 "SymbolicEngine.y"
+#line 78 "SymbolicEngine.y"
                    {
     ast_root = (yyvsp[-1].node);
     return 0;
 }
-#line 1117 "SymbolicEngine.tab.c"
-    break;
-
-  case 4: /* exp: factor  */
-#line 64 "SymbolicEngine.y"
-       { (yyval.node) = (yyvsp[0].node);}
-#line 1123 "SymbolicEngine.tab.c"
-    break;
-
-  case 5: /* exp: exp ADD factor  */
-#line 65 "SymbolicEngine.y"
-                { (yyval.node) = make_node(node_add, (yyvsp[-2].node), (yyvsp[0].node),0,NULL); }
-#line 1129 "SymbolicEngine.tab.c"
-    break;
-
-  case 6: /* exp: exp SUB factor  */
-#line 66 "SymbolicEngine.y"
-                { (yyval.node) = make_node(node_sub, (yyvsp[-2].node), (yyvsp[0].node),0,NULL); }
-#line 1135 "SymbolicEngine.tab.c"
-    break;
-
-  case 7: /* factor: term  */
-#line 70 "SymbolicEngine.y"
-     { (yyval.node) = (yyvsp[0].node);}
 #line 1141 "SymbolicEngine.tab.c"
     break;
 
-  case 8: /* factor: factor MUL term  */
-#line 71 "SymbolicEngine.y"
-                 { (yyval.node) = make_node(node_mul, (yyvsp[-2].node), (yyvsp[0].node),0,NULL); }
+  case 4: /* exp: factor  */
+#line 85 "SymbolicEngine.y"
+       { (yyval.node) = (yyvsp[0].node);}
 #line 1147 "SymbolicEngine.tab.c"
     break;
 
-  case 9: /* factor: factor DIV term  */
-#line 72 "SymbolicEngine.y"
-                 { (yyval.node) = make_node(node_div, (yyvsp[-2].node), (yyvsp[0].node),0,NULL); }
+  case 5: /* exp: exp ADD factor  */
+#line 86 "SymbolicEngine.y"
+                { (yyval.node) = make_op(node_add, (yyvsp[-2].node), (yyvsp[0].node)); }
 #line 1153 "SymbolicEngine.tab.c"
     break;
 
-  case 10: /* term: NUMBER  */
-#line 76 "SymbolicEngine.y"
-       { (yyval.node) = make_node(node_num, NULL, NULL, (yyvsp[0].fval),NULL);}
+  case 6: /* exp: exp SUB factor  */
+#line 87 "SymbolicEngine.y"
+                { (yyval.node) = make_op(node_sub, (yyvsp[-2].node), (yyvsp[0].node)); }
 #line 1159 "SymbolicEngine.tab.c"
     break;
 
-  case 11: /* term: LP exp RP  */
-#line 77 "SymbolicEngine.y"
-           { (yyval.node) = (yyvsp[-1].node); }
+  case 7: /* factor: term  */
+#line 91 "SymbolicEngine.y"
+     { (yyval.node) = (yyvsp[0].node);}
 #line 1165 "SymbolicEngine.tab.c"
     break;
 
-  case 12: /* term: ID  */
-#line 78 "SymbolicEngine.y"
-    { (yyval.node) = make_node(node_term, NULL, NULL, 0.0, (yyvsp[0].id)); }
+  case 8: /* factor: factor MUL term  */
+#line 92 "SymbolicEngine.y"
+                 { (yyval.node) = make_op(node_mul, (yyvsp[-2].node), (yyvsp[0].node)); }
 #line 1171 "SymbolicEngine.tab.c"
     break;
 
+  case 9: /* factor: factor DIV term  */
+#line 93 "SymbolicEngine.y"
+                 { (yyval.node) = make_op(node_div, (yyvsp[-2].node), (yyvsp[0].node)); }
+#line 1177 "SymbolicEngine.tab.c"
+    break;
 
-#line 1175 "SymbolicEngine.tab.c"
+  case 10: /* term: NUMBER  */
+#line 97 "SymbolicEngine.y"
+       { (yyval.node) = make_num((yyvsp[0].fval));}
+#line 1183 "SymbolicEngine.tab.c"
+    break;
+
+  case 11: /* term: LP exp RP  */
+#line 98 "SymbolicEngine.y"
+           { (yyval.node) = (yyvsp[-1].node); }
+#line 1189 "SymbolicEngine.tab.c"
+    break;
+
+  case 12: /* term: ID  */
+#line 99 "SymbolicEngine.y"
+    { (yyval.node) = make_variable((yyvsp[0].id)); }
+#line 1195 "SymbolicEngine.tab.c"
+    break;
+
+  case 13: /* term: ID EXP NUMBER  */
+#line 100 "SymbolicEngine.y"
+               { (yyval.node) = make_op(node_exp, make_variable((yyvsp[-2].id)), make_num((yyvsp[0].fval))); }
+#line 1201 "SymbolicEngine.tab.c"
+    break;
+
+
+#line 1205 "SymbolicEngine.tab.c"
 
       default: break;
     }
@@ -1364,9 +1394,47 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 81 "SymbolicEngine.y"
+#line 103 "SymbolicEngine.y"
 
 
+Node* node_dup(Node* ori){
+    Node* ret = (Node*)malloc(sizeof(Node));
+    *ret = *ori;
+    return ret;
+}
+Node* derive(Node *node){
+    if(node == NULL) return node;
+
+
+    if(node->type == node_num){
+        return make_num(0.0);
+    }
+
+    if(node->type == node_add || node->type == node_sub){
+        return make_op(node->type,derive(node->left),derive(node->right));
+    }
+
+    if(node->type == node_exp){
+        Node *c = make_num(node->right->val);
+        Node *x = make_variable(node->left->id); //x
+        Node *n = make_num(node->right->val - 1); //val
+
+        Node *right = make_op(node_exp,x,n); // x^n
+        return make_op(node_mul,c,right);
+    }
+    
+    if(node->type == node_term){
+        return make_variable(node->id);
+    }
+
+    if(node->type == node_mul){
+        //(fg)' = f'g + fg'
+        Node *left = make_op(node_mul,node_dup(node->left),derive(node->right)); //f'g
+        Node *right = make_op(node_mul,derive(node->left),node_dup(node->right)); //fg'
+        return make_op(node_add,left,right);
+    }
+    
+}
 void print_tree(Node* node,int dep){
     if(node == NULL) return;
     // for(int i = 0; i < dep; ++i) printf(" ");
@@ -1380,9 +1448,23 @@ void print_tree(Node* node,int dep){
     }
     print_tree(node->right,dep+2);
 }
+void print_tree_plain(Node* node,int dep){
+    if(node == NULL) return;
+    print_tree_plain(node->left,dep+1);
+    switch(node->type) {
+        case node_num: printf("%g", node->val); break;
+        case node_add: printf("+"); break;
+        case node_exp: printf("^"); break;
+        case node_mul: printf("*"); break;
+        case node_sub: printf("-"); break;
+        case node_term: printf("%s",node->id); break;
+        case node_div: printf("/"); break;
+    }
+    print_tree_plain(node->right,dep+1);
+}
 int main(int argc,char **argv){
     yyparse();
-    print_tree(ast_root,0);
+    print_tree_plain(derive(ast_root),0);
     printf("\n");
     return 0;
 }
