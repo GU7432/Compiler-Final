@@ -51,6 +51,7 @@ NUMBER { $$ = make_num($1);}
 |LP exp RP { $$ = $2; }
 |ID { $$ = make_variable($1); }
 |ID EXP NUMBER { $$ = make_op(node_exp, make_variable($1), make_num($3)); }
+|LP exp RP EXP NUMBER { $$ = make_op(node_exp, $2 , make_num($5)); }
 ;
 
 %%
