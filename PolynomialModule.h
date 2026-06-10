@@ -6,6 +6,8 @@
 #define MAX_POLY_TERMS 200000
 #define MAX_SYMBOLS 200000
 
+#include "SymbolicMapping.h"
+
 typedef struct poly_term{
     double expo;
     double coeff;
@@ -36,13 +38,13 @@ int compare(const void* a,const void *b){
     if(sgn(p->expo - q->expo) == 0) return 0;
     return (p->expo < q->expo ? -1 : 1);
 }
-void print_term(term_t t){
+void print_term(term_t t,int id){
     if(sgn(t->expo) == 0) {
         printf("%g",t->coeff);
         return;
     }
     if(sgn(t->coeff - 1)) printf("%g",t->coeff);
-    printf("x");
+    printf("%s",symbolic_table[id]);
     if(sgn(t->expo - 1)) printf("^%g",t->expo);
 }
 int merge_terms(int n){
@@ -111,11 +113,11 @@ void add_poly_term(poly_t P,double coef,double exp){
 void print_poly(poly* p){
     poly_term* cur = p->root;
     while(cur != p->tail){
-        print_term(cur);
+        print_term(cur,p->id);
         printf(cur->next->coeff < 0 ? "" : "+");
         cur = cur->next;
     }
-    if(p->tail) print_term(p->tail);
+    if(p->tail) print_term(p->tail,p->id);
     printf("\n");
 }
 

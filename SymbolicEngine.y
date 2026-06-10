@@ -111,7 +111,8 @@ poly_t ast_to_poly(Node* node) {
     }
 
     if (node->type == node_term) {
-        poly_t P = make_poly(0);
+        insert_table(node->id);
+        poly_t P = make_poly(getHash(node->id));
         add_poly_term(P, 1.0, 1.0);
         node->poly = P;
         return P;
