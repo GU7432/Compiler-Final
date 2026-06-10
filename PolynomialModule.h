@@ -37,12 +37,13 @@ int compare(const void* a,const void *b){
     return (p->expo < q->expo ? -1 : 1);
 }
 void print_term(term_t t){
-    if(sgn(t->expo) == 0)
-    printf("%g",t->coeff);
-    else if(sgn(t->coeff - 1) == 0){
-        printf("x^%g",t->expo);
-    }else
-    printf("%gx^%g",t->coeff,t->expo);
+    if(sgn(t->expo) == 0) {
+        printf("%g",t->coeff);
+        return;
+    }
+    if(sgn(t->coeff - 1)) printf("%g",t->coeff);
+    printf("x");
+    if(sgn(t->expo - 1)) printf("^%g",t->expo);
 }
 int merge_terms(int n){
     int i = 0;
