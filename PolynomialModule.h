@@ -124,7 +124,9 @@ int current_poly_count = 0;
 poly_t make_poly(int id){
     poly_t P = (poly_t)malloc(sizeof(poly));
     P->id = id;
+    P->func = 0;
     P->root = P->tail = NULL;
+    return P;
 }
 term_t mul_term(term_t a,term_t b){
     term_t ret = (poly_term*)malloc(sizeof(poly_term));
