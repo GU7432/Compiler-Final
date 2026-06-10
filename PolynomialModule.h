@@ -181,6 +181,17 @@ poly_t sub(poly_t A,poly_t B){
     sort_poly(P);
     return P;
 }
+
+poly_t poly_pow(poly_t P, int n) {
+    poly_t result = make_poly(P->id);
+    add_poly_term(result, 1.0, 0.0);
+    for (int i = 0; i < n; ++i) {
+        poly_t tmp = mul(result, P);
+        result = tmp;
+    }
+    return result;
+}
+
 //return poly handle
 poly_h add_poly(int id,int func){
     poly_t P = make_poly(id);
@@ -203,3 +214,4 @@ poly_t mod(poly_t A,int n){
     while(a && a->expo < n) add_poly_term_raw(ret,dup_term(a)), a = a->next;
     return ret;
 }
+
