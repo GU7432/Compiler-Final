@@ -153,9 +153,14 @@ void print_tree(Node* node,int dep){
     }
     print_tree(node->right,dep+2);
 }
+const double eps = 1e-18;
+int sgn(double x){
+    return (x > eps) - (x < -eps);
+}
 void print_tree_plain(Node* node,int dep){
     if(node == NULL) return;
     print_tree_plain(node->left,dep+1);
+
     switch(node->type) {
         case node_num: printf("%g", node->val); break;
         case node_add: printf("+"); break;
