@@ -1,1 +1,4 @@
 SymbolicEngine
+lex.yy.c
+SymbolicEngine.tab.c
+SymbolicEngine.tab.h
