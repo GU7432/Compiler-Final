@@ -125,10 +125,12 @@ poly_t ast_to_poly(Node* node) {
         case node_sub: P = sub(L, R); break;
         case node_mul: P = mul(L, R); break;
         case node_div:
-            if (R->root && R->root->next == NULL && sgn(R->root->expo) == 0) {
-                P = mul_scalar(1.0 / R->root->coeff, L);
+            if (R->root && R->root->next == NULL) {
+                poly_t inv = make_poly(R->id);
+                add_poly_term(inv, 1.0 / R->root->coeff, -R->root->expo);
+                P = mul(L, inv);
             } else {
-                fprintf(stderr, "Warning: non-constant divisor — treating as 1\n");
+                fprintf(stderr, "Warning: non-monomial divisor — treating as 1\n");
                 P = L;
             }
             break;
