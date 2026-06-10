@@ -42,6 +42,13 @@ Node* make_op(NodeType type, Node* left, Node* right){
     node->right = right;
     return node;
 }
+
+Node* node_dup(Node* ori){
+    Node* ret = (Node*)malloc(sizeof(Node));
+    *ret = *ori;
+    return ret;
+}
+
 Node* make_node(NodeType type, Node* left, Node* right,double val,char* id){
     Node* node = (Node*)malloc(sizeof(Node));
     node->type = type;
@@ -51,6 +58,126 @@ Node* make_node(NodeType type, Node* left, Node* right,double val,char* id){
     node->id = id;
     return node;
 }
+
+#define MAX_POLY_TERMS 200000
+#define MAX_SYMBOLS 200000
+
+typedef struct poly_term{
+    double expo;
+    double coeff;
+    struct poly_term* next;
+} poly_term;
+
+typedef struct poly{
+    poly_term* root;
+    poly_term* tail;
+    int id;
+    int func;
+    int sym_pos;
+} poly;
+
+const double eps = 1e-18;
+int sgn(double x){
+    return (x > eps) - (x < -eps);
+}
+
+poly_term* tmp_terms[MAX_POLY_TERMS];
+int compare(const void* a,const void *b){
+    poly_term* p = *(poly_term**)a;
+    poly_term* q = *(poly_term**)b;
+    
+    if(sgn(p->expo - q->expo) == 0) return 0;
+    return (p->expo > q->expo ? -1 : 1);
+}
+void print_term(poly_term* t){
+    if(sgn(t->expo) == 0)
+    printf("%g",t->coeff);
+    else if(sgn(t->coeff - 1) == 0){
+        printf("x^%g",t->expo);
+    }else
+    printf("%gx^%g",t->coeff,t->expo);
+}
+int merge_terms(int n){
+    int i = 0;
+    int t = 0; //last usable pos
+    while(i < n){
+        int j = i;
+        while(j < n && sgn(tmp_terms[j]->expo - tmp_terms[i]->expo) == 0) ++j;
+        poly_term* cur_term = tmp_terms[i];
+        for(int k = i + 1; k < j; ++k){
+            cur_term->coeff += tmp_terms[k]->coeff;
+        }
+        if(sgn(cur_term->coeff) != 0){
+            tmp_terms[t++] = cur_term;
+        }
+        i = j;
+    }
+    for(int k = 0; k < t - 1; ++k){
+        tmp_terms[k]->next = tmp_terms[k+1];
+    }
+    tmp_terms[t-1]->next = NULL;
+    return t;
+
+}
+int duplicate_to_tmp(poly* P){
+    int t = 0;
+    poly_term* root = P->root;
+    while(root) tmp_terms[t++] = root, root = root->next;
+    return t;
+}
+void sort_poly(poly* P){
+    int t = duplicate_to_tmp(P);
+    qsort(tmp_terms,t,sizeof(poly_term*),compare);
+    t = merge_terms(t);
+    P->root = NULL;
+    P->tail = NULL;
+    if(t){
+        P->root = tmp_terms[0];
+        P->tail = tmp_terms[t-1];
+    }
+}
+void add_poly_term(poly* P,double coef,double exp){
+    poly_term* term = (poly_term*)malloc(sizeof(poly_term));
+    term->coeff = coef;
+    term->expo = exp;
+    term->next = NULL;
+    if(!P->root){
+        P->root = term;
+        P->tail = term;
+        return;
+    }
+    P->tail->next = term;
+    P->tail = term;
+}
+void print_poly(poly* p){
+    poly_term* cur = p->root;
+    while(cur != p->tail){
+        print_term(cur);
+        printf("+");
+        cur = cur->next;
+    }
+    if(p->tail) print_term(p->tail);
+    printf("\n");
+}
+
+poly* polynomials[MAX_SYMBOLS];
+int current_poly_count = 0;
+
+typedef int poly_h;
+
+//return poly handle
+poly_h add_poly(int id,int func){
+    poly* P = (poly*)malloc(sizeof(poly));
+    P->id = id;
+    P->func = func;
+    P->sym_pos = current_poly_count;
+    P->root = NULL;
+    P->tail = NULL;
+    polynomials[current_poly_count] = P;
+    current_poly_count++;
+    return current_poly_count - 1;
+}
+
 
 extern int yylex();
 void yyerror(const char *s);
@@ -103,14 +230,8 @@ NUMBER { $$ = make_num($1);}
 
 %%
 
-Node* node_dup(Node* ori){
-    Node* ret = (Node*)malloc(sizeof(Node));
-    *ret = *ori;
-    return ret;
-}
 Node* derive(Node *node){
     if(node == NULL) return node;
-
 
     if(node->type == node_num){
         return make_num(0.0);
@@ -141,169 +262,21 @@ Node* derive(Node *node){
     }
     
 }
-static int same_var(const char* a, const char* b) {
-    if (!a || !b) return 0;
-    for (int i = 0; ; i++) {
-        if (a[i] != b[i]) return 0;
-        if (a[i] == '\0') return 1;
-    }
-}
 
-/* Extract coefficient and variable from: num, var, num*var, var*num, num*var^exp, var^exp,
-   or a simplified mul-tree that is already a single-variable power product. */
-static double get_coeff(Node* node, const char** var_out, double* exp_out) {
-    if (node->type == node_num) {
-        *var_out = NULL; *exp_out = 1.0; return node->val;
-    }
-    if (node->type == node_term) {
-        *var_out = node->id; *exp_out = 1.0; return 1.0;
-    }
-    if (node->type == node_exp && node->left->type == node_term && node->right->type == node_num) {
-        *var_out = node->left->id; *exp_out = node->right->val; return 1.0;
-    }
-    if (node->type == node_mul) {
-        /* num * something */
-        if (node->left->type == node_num) {
-            double sub_coeff = get_coeff(node->right, var_out, exp_out);
-            return node->left->val * sub_coeff;
-        }
-        /* something * num */
-        if (node->right->type == node_num) {
-            double sub_coeff = get_coeff(node->left, var_out, exp_out);
-            return node->right->val * sub_coeff;
-        }
-        /* x^m * x^n  (after recursion both sides are clean power terms) */
-        const char *lvar = NULL, *rvar = NULL;
-        double lexp, rexp;
-        double lc = get_coeff(node->left,  &lvar, &lexp);
-        double rc = get_coeff(node->right, &rvar, &rexp);
-        if (lvar && rvar && same_var(lvar, rvar)) {
-            *var_out = lvar;
-            *exp_out = lexp + rexp;
-            return lc * rc;
-        }
-    }
-    *var_out = NULL; *exp_out = 0.0; return 0.0;
-}
-
-/* Build coefficient * var^exp node */
-static Node* make_term_node(double coeff, const char* var, double exp) {
-    if (var == NULL) return make_num(coeff);
-    Node* base = make_variable((char*)var);
-    Node* xexp = (exp == 1.0) ? base : make_op(node_exp, base, make_num(exp));
-    if (coeff == 1.0) return xexp;
-    return make_op(node_mul, make_num(coeff), xexp);
-}
-
-Node* simplify(Node* node) {
-    if (node == NULL) return NULL;
-
-    /* Recurse first */
-    if (node->type != node_num && node->type != node_term) {
-        node->left  = simplify(node->left);
-        node->right = simplify(node->right);
-    }
-
-    /* Constant folding */
-    if (node->left && node->left->type == node_num &&
-        node->right && node->right->type == node_num) {
-        double l = node->left->val, r = node->right->val;
-        switch (node->type) {
-            case node_add: return make_num(l + r);
-            case node_sub: return make_num(l - r);
-            case node_mul: return make_num(l * r);
-            case node_div: return (sgn(r) != 0) ? make_num(l / r) : node;
-            case node_exp: {
-                double result = 1.0;
-                for (int i = 0; i < (int)r; ++i) result *= l;
-                return make_num(result);
-            }
-            default: break;
-        }
-    }
-
-    if (node->type == node_mul) {
-        Node *l = node->left, *r = node->right;
-        if (l->type == node_num && sgn(l->val) == 0) return make_num(0.0);
-        if (r->type == node_num && sgn(r->val) == 0) return make_num(0.0);
-        if (l->type == node_num && sgn(l->val - 1.0) == 0) return r;
-        if (r->type == node_num && sgn(r->val - 1.0) == 0) return l;
-
-        /* a * (b * expr)  ->  (a*b) * expr  (flatten nested num coefficients) */
-        if (l->type == node_num && r->type == node_mul && r->left->type == node_num)
-            return simplify(make_op(node_mul, make_num(l->val * r->left->val), r->right));
-        if (r->type == node_num && l->type == node_mul && l->left->type == node_num)
-            return simplify(make_op(node_mul, make_num(r->val * l->left->val), l->right));
-
-        /* x^m * x^n -> coeff * x^(m+n) */
-        const char *lvar = NULL, *rvar = NULL;
-        double lexp, rexp;
-        double lc = get_coeff(l, &lvar, &lexp);
-        double rc = get_coeff(r, &rvar, &rexp);
-        if (lvar && rvar && same_var(lvar, rvar)) {
-            return simplify(make_term_node(lc * rc, lvar, lexp + rexp));
-        }
-    }
-
-    if (node->type == node_add) {
-        Node *l = node->left, *r = node->right;
-        if (l->type == node_num && sgn(l->val) == 0) return r;
-        if (r->type == node_num && sgn(r->val) == 0) return l;
-
-        /* Like-term combining: ax^n + bx^n -> (a+b)x^n */
-        const char *lvar = NULL, *rvar = NULL;
-        double lexp, rexp, lcoeff, rcoeff;
-        lcoeff = get_coeff(l, &lvar, &lexp);
-        rcoeff = get_coeff(r, &rvar, &rexp);
-        if (lvar && rvar && lexp == rexp && same_var(lvar, rvar)) {
-            return make_term_node(lcoeff + rcoeff, lvar, lexp);
-        }
-    }
-
-    if (node->type == node_sub) {
-        Node *l = node->left, *r = node->right;
-        if (r->type == node_num && sgn(r->val) == 0) return l;
-        if (l->type == node_num && sgn(l->val) == 0) return make_op(node_mul, make_num(-1.0), r);
-
-        /* ax^n - bx^n -> (a-b)x^n */
-        const char *lvar = NULL, *rvar = NULL;
-        double lexp, rexp, lcoeff, rcoeff;
-        lcoeff = get_coeff(l, &lvar, &lexp);
-        rcoeff = get_coeff(r, &rvar, &rexp);
-        if (lvar && rvar && lexp == rexp && same_var(lvar, rvar)) {
-            double diff = lcoeff - rcoeff;
-            return make_term_node(diff, lvar, lexp);
-        }
-    }
-
-    if (node->type == node_exp) {
-        Node *l = node->left, *r = node->right;
-        if (r->type == node_num && sgn(r->val) == 0) return make_num(1.0);
-        if (r->type == node_num && sgn(r->val - 1.0) == 0) return l;
-        if (l->type == node_num && sgn(l->val) == 0) return make_num(0.0);
-        if (l->type == node_num && sgn(l->val - 1.0) == 0) return make_num(1.0);
-    }
-
-    return node;
-}
-
-void print_tree(Node* node,int dep){
+void to_poly_plain(Node* node,int handle){
     if(node == NULL) return;
-    // for(int i = 0; i < dep; ++i) printf(" ");
-    print_tree(node->left,dep+1);
-    switch(node->type) {
-        case node_num: printf("[%g]", node->val); break;
-        case node_add: printf("[+]"); break;
-        case node_sub: printf("[-]"); break;
-        case node_term: printf("[%s]",node->id); break;
-        case node_div: printf("[/]"); break;
+    if(node->type == node_mul){
+        add_poly_term(polynomials[handle],node->left->val,node->right->val);
+        return;
     }
-    print_tree(node->right,dep+2);
+    if(node->type == node_exp){
+        add_poly_term(polynomials[handle],1.0,node->right->val);
+        return;
+    }
+    to_poly_plain(node->left,handle);
+    to_poly_plain(node->right,handle);
 }
-const double eps = 1e-18;
-int sgn(double x){
-    return (x > eps) - (x < -eps);
-}
+
 void print_tree_plain(Node* node,int dep){
     if(node == NULL) return;
     print_tree_plain(node->left,dep+1);
@@ -314,17 +287,23 @@ void print_tree_plain(Node* node,int dep){
         case node_exp: printf("^"); break;
         case node_mul: printf("*"); break;
         case node_sub: printf("-"); break;
-        case node_term: printf("%s",node->id); break;
         case node_div: printf("/"); break;
+
+        case node_term: printf("%s",node->id); break;
     }
     print_tree_plain(node->right,dep+1);
 }
 int main(int argc,char **argv){
     yyparse();
-    Node* simnode = simplify(ast_root);
 
-    // Node* d = simplify(derive(simplify(ast_root)));
-    print_tree_plain(simnode, 0);
+    // print_tree_plain(ast_root, 0);
+    poly_h handle = add_poly(0,0);
+    to_poly_plain(ast_root,handle);
+    printf("\n");
+    print_poly(polynomials[handle]);
+    sort_poly(polynomials[handle]);
+    print_poly(polynomials[handle]);
+    
     printf("\n");
     return 0;
 }
