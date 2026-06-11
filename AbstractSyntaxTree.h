@@ -10,8 +10,7 @@ typedef enum {
     node_exp
 } NodeType;
 
-/* forward-declare poly so Node can hold a pointer to it */
-struct poly;
+struct poly_t;
 
 typedef struct Node {
     NodeType type;
@@ -19,7 +18,7 @@ typedef struct Node {
     char* id;
     struct Node *left;
     struct Node *right;
-    struct poly *poly; /* polynomial computed bottom-up for this node */
+    struct poly_t *poly;
 } Node;
 Node* make_num(double val){
     Node* node = (Node*)malloc(sizeof(Node));

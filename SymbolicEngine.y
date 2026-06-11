@@ -1,18 +1,20 @@
 %{
 #include <stdio.h>
 #include <stdlib.h>
-#include "PolynomialModule.h"
+#include "FormalPowerSeries.h"
 #include "AbstractSyntaxTree.h"
+#include "SymbolicMapping.h"
 
 extern int yylex();
 void yyerror(const char *s);
 int sgn(double x);
+#define PMODTERM 30
 
 Node* ast_root = NULL;
 %}
 
 %union{
-    double fval;
+    long long fval;
     char* id; 
     struct Node* node;
 }
@@ -56,87 +58,47 @@ NUMBER { $$ = make_num($1);}
 
 %%
 
-Node* derive(Node *node){
-    if(node == NULL) return node;
-
-    if(node->type == node_num){
-        return make_num(0.0);
-    }
-
-    if(node->type == node_add || node->type == node_sub){
-        return make_op(node->type,derive(node->left),derive(node->right));
-    }
-
-    if(node->type == node_exp){
-        Node *c = make_num(node->right->val);
-        Node *x = make_variable(node->left->id); //x
-        Node *n = make_num(node->right->val - 1); //val
-
-        Node *right = make_op(node_exp,x,n); // x^n
-        return make_op(node_mul,c,right);
-    }
-    
-    if(node->type == node_term){
-        return make_variable(node->id);
-    }
-
-    if(node->type == node_mul){
-        //(fg)' = f'g + fg'
-        Node *left = make_op(node_mul,node_dup(node->left),derive(node->right)); //f'g
-        Node *right = make_op(node_mul,derive(node->left),node_dup(node->right)); //fg'
-        return make_op(node_add,left,right);
-    }
-    
-}
-
-poly_t ast_to_poly(Node* node) {
+poly ast_to_poly(Node* node) {
     if (node == NULL) return NULL;
 
     if (node->type == node_num) {
-        poly_t P = make_poly(0);
-        add_poly_term(P, node->val, 0.0);
+        poly P = make_poly(1);
+        P->a[0] = node->val;
         node->poly = P;
         return P;
     }
 
     if (node->type == node_term) {
         insert_table(node->id);
-        poly_t P = make_poly(getHash(node->id));
-        add_poly_term(P, 1.0, 1.0);
+        poly P = make_poly(2);
+        P->a[1] = 1;
         node->poly = P;
         return P;
     }
 
     if (node->type == node_exp) {
-        poly_t base = ast_to_poly(node->left);
+        poly base = ast_to_poly(node->left);
         int n = (int)node->right->val;
-        poly_t P = poly_pow(base, n);
-        sort_poly(P);
+        poly P = poly_pow(base, n);
         node->poly = P;
         return P;
     }
 
-    poly_t L = ast_to_poly(node->left);
-    poly_t R = ast_to_poly(node->right);
+    poly L = ast_to_poly(node->left);
+    poly R = ast_to_poly(node->right);
 
-    poly_t P = NULL;
+    poly P = NULL;
     switch (node->type) {
         case node_add: P = add(L, R); break;
         case node_sub: P = sub(L, R); break;
         case node_mul: P = mul(L, R); break;
-        case node_div:
-            if (R->root && R->root->next == NULL) {
-                poly_t inv = make_poly(R->id);
-                add_poly_term(inv, 1.0 / R->root->coeff, -R->root->expo);
-                P = mul(L, inv);
-            } else {
-                fprintf(stderr, "Warning: non-monomial divisor — treating as 1\n");
-                P = L;
-            }
+        case node_div: {
+            poly IR = inverse(R,PMODTERM);
+            P = mul(L,IR);
             break;
+        }
         default: P = make_poly(0); break;
     }
-    sort_poly(P);
     node->poly = P;
     return P;
 }
@@ -160,9 +122,10 @@ void print_tree_plain(Node* node,int dep){
 int main(int argc,char **argv){
     yyparse();
 
-    poly_t result = ast_to_poly(ast_root);
+    poly result = ast_to_poly(ast_root);
     if (result) {
         print_poly(result);
+        printf("\n");
     }
 
     return 0;

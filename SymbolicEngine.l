@@ -16,8 +16,8 @@
 ")" { return RP;}
 "^" { return EXP;}
 
-([-]?)([0-9]+(\.[0-9]+)?|\.[0-9]+) {
-    yylval.fval = atof(yytext);
+([-]?)([0-9]+) {
+    yylval.fval = atoi(yytext);
     return NUMBER;
 }
 
