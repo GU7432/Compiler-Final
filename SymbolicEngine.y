@@ -89,6 +89,18 @@ Node* derive(Node *node){
     
 }
 
+poly_t derive_poly(poly_t P) {
+    poly_t D = make_poly(P->id);
+    term_t t = P->root;
+    while (t) {
+        double new_coeff = t->coeff * t->expo;
+        if (sgn(new_coeff) != 0)
+            add_poly_term(D, new_coeff, t->expo - 1.0);
+        t = t->next;
+    }
+    return D;
+}
+
 poly_t ast_to_poly(Node* node) {
     if (node == NULL) return NULL;
 
@@ -162,7 +174,11 @@ int main(int argc,char **argv){
 
     poly_t result = ast_to_poly(ast_root);
     if (result) {
+        sort_poly(result);
         print_poly(result);
+        poly_t derived = derive_poly(result);
+        sort_poly(derived);
+        print_poly(derived);
     }
 
     return 0;
