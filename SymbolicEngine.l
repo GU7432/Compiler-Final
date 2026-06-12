@@ -16,15 +16,16 @@
 ")" { return RP;}
 "^" { return EXP;}
 
-([-]?)([0-9]+) {
+[A-Za-z] {
+    yylval.id = strdup(yytext);
+    return ID;
+}
+
+[0-9]+ {
     yylval.fval = atoi(yytext);
     return NUMBER;
 }
 
-[A-Za-z]+[0-9]* {
-    yylval.id = strdup(yytext);
-    return ID;
-}
 
 \n {return EOL;}
 [ \t] {/*skip space*/}

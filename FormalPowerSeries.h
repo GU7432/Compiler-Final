@@ -169,6 +169,10 @@ poly poly_pow(poly A,int n){
 }
 void print_poly(poly A){
     if(!A) return;
+    if(A->size == 1){
+        printf("%lld",A->a[0]);
+        return;
+    }
     for(int i = 0; i < A->size; ++i){
         if(A->a[i] == 0) continue;
         if(i == 0) printf("%lld",A->a[i]);

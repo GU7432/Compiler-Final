@@ -23,6 +23,8 @@ Node* ast_root = NULL;
 %token ADD SUB MUL DIV EQ EXP
 %token LP RP ABS
 %token <id> ID
+%token SQRT
+%token E
 %token EOL
 
 %type <node> exp factor term
@@ -40,6 +42,7 @@ exp:
 factor { $$ = $1;}
 |exp ADD factor { $$ = make_op(node_add, $1, $3); }
 |exp SUB factor { $$ = make_op(node_sub, $1, $3); }
+|SUB factor { $$ = make_op(node_sub,NULL,$2); }
 ;
 
 factor:
@@ -50,8 +53,8 @@ term { $$ = $1;}
 
 term:
 NUMBER { $$ = make_num($1);}
-|LP exp RP { $$ = $2; }
 |ID { $$ = make_variable($1); }
+|LP exp RP { $$ = $2; }
 |ID EXP NUMBER { $$ = make_op(node_exp, make_variable($1), make_num($3)); }
 |LP exp RP EXP NUMBER { $$ = make_op(node_exp, $2 , make_num($5)); }
 ;
@@ -90,7 +93,11 @@ poly ast_to_poly(Node* node) {
     poly P = NULL;
     switch (node->type) {
         case node_add: P = add(L, R); break;
-        case node_sub: P = sub(L, R); break;
+        case node_sub: {
+            if(L == NULL) P = sub(make_poly(1),R);
+            else P = sub(L, R); 
+            break;
+        }
         case node_mul: P = mul(L, R); break;
         case node_div: {
             poly IR = inverse(R,PMODTERM);
